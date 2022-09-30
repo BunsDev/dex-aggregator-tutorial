@@ -1,19 +1,18 @@
 import React, { Component } from 'react'
 import Web3 from 'web3'
 import IERC20 from '../abis/IERC20.json'
-import DexAggregator from '../abis/DexAggregator.json'
 import Navbar from './Navbar'
 import Main from './Main'
 import './App.css'
+import { aggregatorAddress, usdcAddress, wavaxAddress } from '../constants'
 import { futureTime } from '../helpers'
+import AGGREGATOR_ABI from '../abis/DexAggregator.json'
 
-const usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 const exchangeDataReset = {        
   outputsLoading: false,
   dexIndexWithBestPrice: '0',
-  uniOutput: '0',
-  sushiOutput: '0',
+  soulOutput: '0',
+  joeOutput: '0',
 }
 class App extends Component {
 
@@ -31,7 +30,7 @@ class App extends Component {
     const ethBalance = await web3.eth.getBalance(this.state.account)
     this.setState({ ethBalance })
 
-    // Load USDC
+    // loads: USDC
     try {
       // Create new web3 usdc contract instance
       const usdc = new web3.eth.Contract(IERC20.abi, usdcAddress)
@@ -42,11 +41,11 @@ class App extends Component {
       console.log('USDC contract not deployed to the current network. Please select another network with Metamask.')
     }
 
-    // Load Aggregator
+    // loads: Aggregator
     const networkId =  await web3.eth.net.getId()
-    const dexAggregatorData = DexAggregator.networks[networkId]
+    const dexAggregatorData = AGGREGATOR_ABI//= DexAggregator.networks[networkId]
     if(dexAggregatorData) {
-      const dexAggregator = new web3.eth.Contract(DexAggregator.abi, dexAggregatorData.address)
+      const dexAggregator = new web3.eth.Contract(AGGREGATOR_ABI, aggregatorAddress)
       this.setState({ dexAggregator })
       this.setState({ dexAggregatorAddress: dexAggregatorData.address})
     } else {
@@ -71,7 +70,7 @@ class App extends Component {
 
   buyUsdc = (etherAmount) => {
     this.setState({ loading: true })
-    this.state.dexAggregator.methods.buyUSDCAtBestPrice(futureTime(15), [wethAddress, usdcAddress]).send({ value: etherAmount, from: this.state.account }).on('transactionHash', (hash) => {
+    this.state.dexAggregator.methods.buyUSDCAtBestPrice(futureTime(15), [wavaxAddress, usdcAddress]).send({ value: etherAmount, from: this.state.account }).on('transactionHash', (hash) => {
       this.setState({ loading: false })
       this.setState({exchangeData : exchangeDataReset})
     })
@@ -80,7 +79,7 @@ class App extends Component {
   sellUsdc = async (usdcAmount) => {
     this.setState({ loading: true })
     await this.state.usdc.methods.approve(this.state.dexAggregatorAddress, usdcAmount).send({ from: this.state.account })
-    await this.state.dexAggregator.methods.sellUSDCAtBestPrice(usdcAmount, futureTime(15), [usdcAddress, wethAddress]).send({ from: this.state.account })
+    await this.state.dexAggregator.methods.sellUSDCAtBestPrice(usdcAmount, futureTime(15), [usdcAddress, wavaxAddress]).send({ from: this.state.account })
     this.setState({ loading: false })
     this.setState({exchangeData : exchangeDataReset})
   }
@@ -98,8 +97,8 @@ class App extends Component {
           ...data,
           outputsLoading: false,
           dexIndexWithBestPrice: index,
-          uniOutput: index === "0" ? amounts[0] : amounts[1],
-          sushiOutput: index === "0" ? amounts[1] : amounts[0]
+          soulOutput: index === "0" ? amounts[0] : amounts[1],
+          joeOutput: index === "0" ? amounts[1] : amounts[0]
         }
       })
     } else {
@@ -146,7 +145,7 @@ class App extends Component {
             <main role="main" className="col-lg-12 ml-auto mr-auto" style={{ maxWidth: '600px' }}>
               <div className="content mr-auto ml-auto">
                 <a
-                  href="http://www.dappuniversity.com/bootcamp"
+                  href="http://https://exchange.soulswap.finance"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

@@ -1,0 +1,5 @@
+export const aggregatorAddress = "0xE15d319896038aB76f2bc7cE15CBc2689b498570"
+export const soulAddress = "0xa4594460A9d3D41e8B85542D34E23AdAbc3c86Ef"
+export const joeAddress = "0x60aE616a2155Ee3d9A68541Ba4544862310933d4"
+export const wavaxAddress = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
+export const usdcAddress = "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"

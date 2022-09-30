@@ -1,4 +1,4 @@
-# Dex Aggregator
+# Soul Aggregator
 ### About
 A simple full stack application with smart contract that compares exchange rates for the weth/usdc trading pair across Uniswap and Sushiswap and then routes users swap to the dex with the best price.
 
@@ -9,8 +9,6 @@ A simple full stack application with smart contract that compares exchange rates
 
 - Solidity (Programming language for writing smart sontracts)
 - Javascript (Used for testing and to build front end with React)
-- [Uniswap V2 Protocol](https://docs.uniswap.org/protocol/V2/introduction)
-- [Sushiswap Protocol](https://dev.sushi.com/)
 - [Web3](https://web3js.readthedocs.io/en/v1.5.2/) (Blockchain interaction)
 - [Truffle](https://www.trufflesuite.com/docs/truffle/overview) (Development Ffamework)
 - [Ganache-cli](https://github.com/trufflesuite/ganachee) (For local blockchain fork of the ethereum mainnet)
@@ -41,7 +39,8 @@ e.g Mainnet URL https://mainnet.infura.io/v3/11111111111111111
 ### 3. Start Ganache-cli as a fork of the mainnet and unlock account with a lot of USDC.
 ```sh
 $ ganache-cli -f https://mainnet.infura.io/v3/11111111111111111
--u 0xc647F8f745a59B74A26d76Da7dcCc8BadF649C32
+# -u 0xc647F8f745a59B74A26d76Da7dcCc8BadF649C32
+-u 0xFd63Bf84471Bc55DD9A83fdFA293CCBD27e1F4C8
 ```
 
 ### 4. Connect you ganache-cli addresses to Metamask

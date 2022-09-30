@@ -1,24 +1,23 @@
 import React, { Component } from 'react'
 import { OverlayTrigger, Tooltip } from 'react-bootstrap'
-import usdcLogo from '../usd-coin-usdc-logo.png'
-import ethLogo from '../eth-logo.png'
-import uniLogo from '../Uniswap_Logo.svg.png'
-import sushiLogo from '../sushiswap-sushi-logo.png'
-const usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+import usdcLogo from '../USDC.png'
+import avaxLogo from '../AVAX.png'
+import soulLogo from '../SOUL.png'
+import joeLogo from '../JOE.png'
+import { usdcAddress, wavaxAddress} from '../constants'
 
 const renderExchangeRate = (exchangeRate, primary) => {
   return(
     <div className="mb-5">
       <span className={`float-left ${!primary ? `text-muted` : ``}`}>Exchange Rate</span>
-      <span className={`float-right ${!primary ? `text-muted` : ``}`}>1 ETH = {Math.round(10**6*exchangeRate)/(10**6)} USDC</span>
+      <span className={`float-right ${!primary ? `text-muted` : ``}`}>1 AVAX = {Math.round(10**6*exchangeRate)/(10**6)} USDC</span>
     </div>
   )
 }
 
 const renderExchangeLogo = (exchange, primary) => {
-  const logo = exchange === 'Uniswap' ? uniLogo : sushiLogo
-  const dex = exchange === 'Uniswap' ? 'UNI' : 'SUSHI'
+  const logo = exchange === 'SoulSwap' ? soulLogo : joeLogo
+  const dex = exchange === 'SoulSwap' ? 'SOUL' : 'JOE'
   return(
     <div className="input-group-append">
       <div className={`input-group-text ${primary ? `border-primary` : `text-muted`}`}>
@@ -74,7 +73,7 @@ const renderExchangeLogo = (exchange, primary) => {
           <Tooltip >
             {`${percentReturn}% greater return offered by ${exchanges[0]}`}
           </Tooltip>}>
-        <button type="submit" className="btn btn-primary btn-block btn-lg">SWAP!</button>
+        <button type="submit" className="btn btn-primary btn-block btn-lg">Exchange</button>
       </OverlayTrigger>
     </>
   )
@@ -95,8 +94,8 @@ class BuyForm extends Component {
     const {
       outputsLoading,
       dexIndexWithBestPrice,
-      uniOutput,
-      sushiOutput
+      soulOutput,
+      joeOutput
     } = this.props.exchangeData
     let etherAmount
     console.log(this.props)
@@ -109,8 +108,8 @@ class BuyForm extends Component {
       }}>
         <div>
           <label className="float-left">
-            <img src={ethLogo} height='32' alt="" />
-            &nbsp; ETH
+            <img src={avaxLogo} height='32' alt="" />
+            &nbsp; AVAX
           </label>
           <span className="float-right text-muted">
             Balance: {Math.round(10**6*window.web3.utils.fromWei(this.props.ethBalance, 'Ether'))/10**6}
@@ -123,10 +122,10 @@ class BuyForm extends Component {
               etherAmount = this.input.value.toString()
               if (etherAmount) {
                 etherAmount = window.web3.utils.toWei(etherAmount, 'Ether')
-                this.props.getOutputs(etherAmount, [wethAddress, usdcAddress])
+                this.props.getOutputs(etherAmount, [wavaxAddress, usdcAddress])
                 this.setState({etherAmount})
               } else {
-                this.props.getOutputs('0', [wethAddress, usdcAddress])
+                this.props.getOutputs('0', [wavaxAddress, usdcAddress])
                 this.setState({etherAmount: '0'})
               }
             }}
@@ -149,8 +148,8 @@ class BuyForm extends Component {
         </div>
         <div>
           { dexIndexWithBestPrice === "0"
-            ? renderOutputForms(uniOutput, sushiOutput, this.state.etherAmount, outputsLoading, ['Uniswap', 'SushiSwap'])
-            : renderOutputForms(sushiOutput, uniOutput, this.state.etherAmount, outputsLoading, ['SushiSwap', 'Uniswap'])
+            ? renderOutputForms(soulOutput, joeOutput, this.state.etherAmount, outputsLoading, ['SoulSwap', 'TraderJoe'])
+            : renderOutputForms(joeOutput, soulOutput, this.state.etherAmount, outputsLoading, ['TraderJoe', 'SoulSwap'])
           }
         </div>
 

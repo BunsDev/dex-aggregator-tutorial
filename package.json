@@ -1,8 +1,8 @@
 {
-  "name": "DexAggregator",
+  "name": "soulswap-aggregator",
   "version": "0.1.0",
   "description": "Compares swap prices across Uni and Sushi swap and routes users swap to the dex with the best price",
-  "author": "gregory@dappuniversity.com",
+  "author": "0xBuns",
   "dependencies": {
     "@openzeppelin/contracts": "^4.4.1",
     "babel-polyfill": "6.26.0",

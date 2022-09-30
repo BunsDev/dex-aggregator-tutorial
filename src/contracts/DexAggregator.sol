@@ -1,81 +1,118 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-//Code for the shared dex interface of sushiSwap and uniSwap.
+pragma solidity >=0.8.0;
+
+interface IERC20 {
+    function totalSupply() external view returns (uint);
+    function balanceOf(address account) external view returns (uint);
+    function allowance(address owner, address spender) external view returns (uint);
+    function approve(address spender, uint amount) external returns (bool);
+    function transferFrom(address spender, address to, uint amount) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
+
+    // EIP 2612
+    function permit(
+        address owner,
+        address spender,
+        uint value,
+        uint deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+}
+
 interface IDex {
-    function WETH() external pure returns (address);
-    function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
-        external
-        returns (uint[] memory amounts);
-    function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
-        external
-        payable
-        returns (uint[] memory amounts);
+    function swapTokensForExactAVAX(
+        uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+        external returns (uint[] memory amounts);
+    function swapTokensForExactETH(
+        uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+        external returns (uint[] memory amounts);
+    function swapETHForExactTokens(
+        uint amountOut, address[] calldata path, address to, uint deadline)
+        external payable returns (uint[] memory amounts);
+    function swapAVAXForExactTokens(
+        uint amountOut, address[] calldata path, address to, uint deadline)
+        external payable returns (uint[] memory amounts);
     function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
 }
-contract DexAggregator {
-    // Uniswap at index 0 and sushiswap at index 1
+
+contract SoulAggregator {
+    // soulSwap[0] && joeSwap[1]
     IDex[2] public Dexes;
-    IERC20 public immutable usdc;
-    address public immutable wethAddress;
-    /// @notice USDCBought event emitted on successful ETH to USDC swap. 
+    IERC20 public immutable usdc = IERC20(0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E);
+    address public immutable wavaxAddress = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
+    IDex public joeSwap = IDex(0x60aE616a2155Ee3d9A68541Ba4544862310933d4);
+    IDex public soulSwap = IDex(0xa4594460A9d3D41e8B85542D34E23AdAbc3c86Ef);
+
+    /// @notice USDCBought event emitted on successful AVAX to USDC swap. 
     event USDCBought(
-        uint256 usdcAmountBought, 
-        uint256 ethAmountSold,
+        uint usdcAmountBought, 
+        uint avaxAmountSold,
         address dex, 
-        uint256 nextBestUsdcOutput
+        uint nextBestUsdcOutput
     );
-    /// @notice USDCSold event emitted on successful USDC to ETH swap.    
+
+    /// @notice USDCSold event emitted on successful USDC to AVAX swap.    
     event USDCSold(
-        uint256 ethAmountBought,
-        uint256 usdcAmountSold, 
+        uint avaxAmountBought,
+        uint usdcAmountSold, 
         address dex, 
-        uint256 nextBestEthOutput
+        uint nextBestAvaxOutput
     );
-    constructor (address _sushiAddress, address _usdcAddress) {
-        // Don't need to pass uni address to constructor b/c its the same across all networks.
-        Dexes[0] = IDex(address(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D)); 
-        Dexes[1] = IDex(_sushiAddress);
-        wethAddress = Dexes[0].WETH();
-        usdc = IERC20(_usdcAddress);
+
+    constructor () {
+        Dexes[0] = IDex(soulSwap);
+        Dexes[1] = IDex(joeSwap);
     }
-    // important to recieve refunded ETH from either dex
+
+    // recieves: refunded ETH from either dex.
     receive() external payable {}
-    // Function that returns the index of the exchange with the highest output amount and the output amount from each exchange in an array
-    function getOutputAmounts(uint _amountIn, address[] calldata _path) public view returns(uint8 _bestPriceDex, uint[] memory _amounts){
-        //Create new in memory array of length 2
-        _amounts = new uint[] (2);
-        // fetch output amounts from each exchange
-        _amounts[0] = (Dexes[0].getAmountsOut(_amountIn, _path))[1];
-        _amounts[1] = (Dexes[1].getAmountsOut(_amountIn, _path))[1];
-        // If sushi amount is greater than uni amount, swap order of amounts array and set dex which offers the greater output index to 1 (sushi)
-        if(_amounts[1] > _amounts[0]) {
-            _amounts[0] = _amounts[1];
-            _amounts[1] = (Dexes[0].getAmountsOut(_amountIn, _path))[1];
-            _bestPriceDex = 1;
-        }
+
+    // returns: index of exchange with the highest output amount and the output amount from each exchange in an array.
+    function getOutputAmounts(uint amountIn, address[] calldata path) 
+        public view returns(uint8 optimalDex, uint[] memory amounts){
+            // creates: new in memory array of length 2
+            amounts = new uint[] (2);
+            // fetches: output amounts from each exchange
+            amounts[0] = (Dexes[0].getAmountsOut(amountIn, path))[1];
+            amounts[1] = (Dexes[1].getAmountsOut(amountIn, path))[1];
+            // [if] joeSwap > than soulSwap amount, [then] swap order of amounts[] & set dex w/greater output i to 1.
+            if(amounts[1] > amounts[0]) {
+                amounts[0] = amounts[1];
+                amounts[1] = (Dexes[0].getAmountsOut(amountIn, path))[1];
+                optimalDex = 1;
+            }
     }
-    function buyUSDCAtBestPrice(uint _deadline,address[] calldata _path) external payable {
-        require(_path[0] == wethAddress && _path[1] == address(usdc), "Wrong token pair array");
-        // get dex with best USDC price and output amounts for each exchange
-        (uint8 _dex, uint[] memory _USDCAmounts) = getOutputAmounts(msg.value, _path);
-        // Route trade to dex with best USDC price
-        Dexes[_dex].swapETHForExactTokens{ value: msg.value }(_USDCAmounts[0], _path, msg.sender, _deadline);
-        // refund leftover ETH to user
+
+    function buyUSDCAtBestPrice(uint deadline, address[] calldata path) external payable {
+        require(path[0] == wavaxAddress && path[1] == address(usdc), "Wrong token pair array");
+        // get dex with best USDC price and output amounts for each exchange.
+        (uint8 dex, uint[] memory stableAmounts) = getOutputAmounts(msg.value, path);
+        // route trade to dex with best USDC price.
+        Dexes[dex] == joeSwap 
+            ? Dexes[dex].swapAVAXForExactTokens{ value: msg.value }(stableAmounts[0], path, msg.sender, deadline)
+            : Dexes[dex].swapETHForExactTokens{ value: msg.value }(stableAmounts[0], path, msg.sender, deadline);
+        // refund leftover ETH to user.
         payable(msg.sender).transfer(address(this).balance);
-        emit USDCBought(_USDCAmounts[0], msg.value, address(Dexes[_dex]), _USDCAmounts[1]);
+        emit USDCBought(stableAmounts[0], msg.value, address(Dexes[dex]), stableAmounts[1]);
     }
-    function sellUSDCAtBestPrice(uint _USDCAmount, uint _deadline, address[] calldata _path) external {
-        require(_path[1] == wethAddress && _path[0] == address(usdc), "Wrong token pair array");
-        require(usdc.balanceOf(msg.sender) >= _USDCAmount, "Error, can't sell more USDC than owned");
-        // Transfer the usdc amount from the user to this contract. 
-        require(usdc.transferFrom(msg.sender, address(this), _USDCAmount));
+
+    function sellUSDCAtBestPrice(uint stableAmount, uint deadline, address[] calldata path) external {
+        require(path[1] == wavaxAddress && path[0] == address(usdc), "Wrong token pair array");
+        require(usdc.balanceOf(msg.sender) >= stableAmount, "Error, can't sell more USDC than owned");
+        // transfer the usdc amount from the user to this contract. 
+        require(usdc.transferFrom(msg.sender, address(this), stableAmount));
         // get dex with best ETH price and output amounts for each exchange
-        (uint8 _dex, uint[] memory _ETHAmounts) = getOutputAmounts(_USDCAmount, _path);
+        (uint8 dex, uint[] memory nativeAmounts) = getOutputAmounts(stableAmount, path);
         // approve dex with best ETH price to spend USDC tokens
-        require(usdc.approve(address(Dexes[_dex]), _USDCAmount), 'approve failed.');
-        // Route trade to dex with best ETH price
-        Dexes[_dex].swapTokensForExactETH(_ETHAmounts[0], _USDCAmount, _path, msg.sender, _deadline);
-        emit USDCSold(_ETHAmounts[0], _USDCAmount, address(Dexes[_dex]), _ETHAmounts[1]);
+        require(usdc.approve(address(Dexes[dex]), stableAmount), 'approve failed.');
+        // route trade to dex with best ETH price
+        Dexes[dex] == joeSwap 
+            ? Dexes[dex].swapTokensForExactAVAX(nativeAmounts[0], stableAmount, path, msg.sender, deadline)
+            : Dexes[dex].swapTokensForExactETH(nativeAmounts[0], stableAmount, path, msg.sender, deadline);
+        emit USDCSold(nativeAmounts[0], stableAmount, address(Dexes[dex]), nativeAmounts[1]);
     }
 }
